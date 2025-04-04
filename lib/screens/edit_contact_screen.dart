@@ -4,12 +4,12 @@ import '../models/contact.dart';
 
 class EditContactScreen extends StatefulWidget {
   final Contact contact;
-  final Function(Contact) onSave;
+  final Function(Contact)? onSave;
 
   const EditContactScreen({
     super.key,
     required this.contact,
-    required this.onSave,
+    this.onSave,
   });
 
   @override
@@ -117,38 +117,39 @@ class _EditContactScreenState extends State<EditContactScreen> {
   }
 
   void _handleSave() {
-    if (_formKey.currentState!.validate()) {
-      final updatedContact = Contact(
-        id: widget.contact.id,
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        mobile: _mobileController.text.trim(),
-        company: _companyController.text.trim(),
-        jobTitle: _jobTitleController.text.trim(),
+    if (_formKey.currentState?.validate() ?? false) {
+      final updatedContact = widget.contact.copyWith(
+        firstName: _firstNameController.text,
+        lastName: _lastNameController.text,
+        email: _emailController.text,
+        phone: _phoneController.text.isEmpty ? null : _phoneController.text,
+        mobile: _mobileController.text.isEmpty ? null : _mobileController.text,
+        company: _companyController.text.isEmpty ? null : _companyController.text,
+        jobTitle: _jobTitleController.text.isEmpty ? null : _jobTitleController.text,
         dateOfBirth: _selectedDate,
-        notes: _notesController.text.trim(),
-        streetAddress: _streetAddressController.text.trim(),
-        city: _cityController.text.trim(),
-        state: _stateController.text.trim(),
-        postalCode: _postalCodeController.text.trim(),
-        country: _countryController.text.trim(),
-        linkedIn: _linkedInController.text.trim(),
-        twitter: _twitterController.text.trim(),
-        facebook: _facebookController.text.trim(),
-        instagram: _instagramController.text.trim(),
-        website: _websiteController.text.trim(),
-        department: _departmentController.text.trim(),
-        assistantName: _assistantNameController.text.trim(),
-        assistantPhone: _assistantPhoneController.text.trim(),
-        relationship: _relationshipController.text.trim(),
-        tags: _tagsController.text.trim().isNotEmpty
-            ? _tagsController.text.trim().split(',').map((e) => e.trim()).toList()
-            : null,
+        notes: _notesController.text.isEmpty ? null : _notesController.text,
+        streetAddress: _streetAddressController.text.isEmpty ? null : _streetAddressController.text,
+        city: _cityController.text.isEmpty ? null : _cityController.text,
+        state: _stateController.text.isEmpty ? null : _stateController.text,
+        postalCode: _postalCodeController.text.isEmpty ? null : _postalCodeController.text,
+        country: _countryController.text.isEmpty ? null : _countryController.text,
+        linkedIn: _linkedInController.text.isEmpty ? null : _linkedInController.text,
+        twitter: _twitterController.text.isEmpty ? null : _twitterController.text,
+        facebook: _facebookController.text.isEmpty ? null : _facebookController.text,
+        instagram: _instagramController.text.isEmpty ? null : _instagramController.text,
+        website: _websiteController.text.isEmpty ? null : _websiteController.text,
+        department: _departmentController.text.isEmpty ? null : _departmentController.text,
+        assistantName: _assistantNameController.text.isEmpty ? null : _assistantNameController.text,
+        assistantPhone: _assistantPhoneController.text.isEmpty ? null : _assistantPhoneController.text,
+        relationship: _relationshipController.text.isEmpty ? null : _relationshipController.text,
+        tags: _tagsController.text.isEmpty ? null : _tagsController.text.split(',').map((e) => e.trim()).toList(),
       );
-      widget.onSave(updatedContact);
-      Navigator.pop(context);
+
+      if (widget.onSave != null) {
+        widget.onSave!(updatedContact);
+      }
+      
+      Navigator.pop(context, updatedContact);
     }
   }
 

@@ -118,75 +118,88 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _chats.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.chat_bubble_outline,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No chats yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _startNewChat,
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Start New Chat'),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _createNewGroup,
-                    icon: const Icon(Icons.group_add),
-                    label: const Text('Create Group'),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              itemCount: _chats.length,
-              itemBuilder: (context, index) {
-                final chat = _chats[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: Text(
-                      chat.isGroup ? 'G' : (chat.name.isNotEmpty ? chat.name[0] : '?'),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
-                  title: Text(chat.name),
-                  subtitle: Text(chat.lastMessage),
-                  trailing: Text(
-                    _formatTime(chat.lastMessageTime),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    // TODO: Navigate to chat detail screen
-                  },
-                );
-              },
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Chats',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-      floatingActionButton: _chats.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: _startNewChat,
-              child: const Icon(Icons.chat),
-            )
-          : null,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _chats.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No chats yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _startNewChat,
+                          icon: const Icon(Icons.person_add),
+                          label: const Text('Start New Chat'),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: _createNewGroup,
+                          icon: const Icon(Icons.group_add),
+                          label: const Text('Create Group'),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _chats.length,
+                    itemBuilder: (context, index) {
+                      final chat = _chats[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            child: Text(
+                              chat.isGroup ? 'G' : (chat.name.isNotEmpty ? chat.name[0] : '?'),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            ),
+                          ),
+                          title: Text(chat.name),
+                          subtitle: Text(chat.lastMessage),
+                          trailing: Text(
+                            _formatTime(chat.lastMessageTime),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                          onTap: () {
+                            // TODO: Navigate to chat detail screen
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
