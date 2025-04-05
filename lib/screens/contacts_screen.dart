@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/contact.dart';
 import 'edit_contact_screen.dart';
 
@@ -112,6 +113,85 @@ class _ContactsScreenState extends State<ContactsScreen> {
     }
   }
 
+  void _handleAddContact() async {
+    final newContact = Contact(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      firstName: '',
+      lastName: '',
+      email: '',
+    );
+
+    final result = await Navigator.push<Contact>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditContactScreen(contact: newContact),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _contacts.add(result);
+      });
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch phone dialer')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendTextMessage(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'sms',
+      path: phoneNumber,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch messaging app')),
+        );
+      }
+    }
+  }
+
+  Widget _buildPhoneActions(String phoneNumber) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.phone),
+          tooltip: 'Call',
+          onPressed: () => _makePhoneCall(phoneNumber),
+          iconSize: 20,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.message),
+          tooltip: 'Text',
+          onPressed: () => _sendTextMessage(phoneNumber),
+          iconSize: 20,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -192,16 +272,30 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                     value: contact.email,
                                   ),
                                   if (contact.phone != null)
-                                    _buildContactInfo(
-                                      icon: Icons.phone,
-                                      label: 'Phone',
-                                      value: contact.phone!,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildContactInfo(
+                                            icon: Icons.phone,
+                                            label: 'Phone',
+                                            value: contact.phone!,
+                                          ),
+                                        ),
+                                        _buildPhoneActions(contact.phone!),
+                                      ],
                                     ),
                                   if (contact.mobile != null)
-                                    _buildContactInfo(
-                                      icon: Icons.phone_android,
-                                      label: 'Mobile',
-                                      value: contact.mobile!,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildContactInfo(
+                                            icon: Icons.phone_android,
+                                            label: 'Mobile',
+                                            value: contact.mobile!,
+                                          ),
+                                        ),
+                                        _buildPhoneActions(contact.mobile!),
+                                      ],
                                     ),
                                   if (contact.jobTitle != null)
                                     _buildContactInfo(
@@ -221,9 +315,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implement add contact
-        },
+        onPressed: _handleAddContact,
+        tooltip: 'Add Contact',
         child: const Icon(Icons.add),
       ),
     );
