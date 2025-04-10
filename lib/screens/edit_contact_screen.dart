@@ -43,6 +43,7 @@ class _EditContactScreenState extends State<EditContactScreen> {
 
   final _formKey = GlobalKey<FormState>();
   DateTime? _selectedDate;
+  DateTime? _selectedAnniversary;
   final _dateFormat = DateFormat('yyyy-MM-dd');
 
   @override
@@ -72,6 +73,7 @@ class _EditContactScreenState extends State<EditContactScreen> {
     _relationshipController = TextEditingController(text: widget.contact.relationship);
     _tagsController = TextEditingController(text: widget.contact.tags?.join(', '));
     _selectedDate = widget.contact.dateOfBirth;
+    _selectedAnniversary = widget.contact.anniversary;
   }
 
   @override
@@ -102,16 +104,20 @@ class _EditContactScreenState extends State<EditContactScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> _selectDate(BuildContext context, bool isAnniversary) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      initialDate: (isAnniversary ? _selectedAnniversary : _selectedDate) ?? DateTime.now(),
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: isAnniversary ? DateTime.now().add(const Duration(days: 365 * 100)) : DateTime.now(),
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null) {
       setState(() {
-        _selectedDate = picked;
+        if (isAnniversary) {
+          _selectedAnniversary = picked;
+        } else {
+          _selectedDate = picked;
+        }
       });
     }
   }
@@ -127,6 +133,7 @@ class _EditContactScreenState extends State<EditContactScreen> {
         company: _companyController.text.isEmpty ? null : _companyController.text,
         jobTitle: _jobTitleController.text.isEmpty ? null : _jobTitleController.text,
         dateOfBirth: _selectedDate,
+        anniversary: _selectedAnniversary,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         streetAddress: _streetAddressController.text.isEmpty ? null : _streetAddressController.text,
         city: _cityController.text.isEmpty ? null : _cityController.text,
@@ -191,7 +198,7 @@ class _EditContactScreenState extends State<EditContactScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Contact'),
+        title: Text(widget.contact.firstName.isEmpty ? 'Add Contact' : 'Edit Contact'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -317,14 +324,44 @@ class _EditContactScreenState extends State<EditContactScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            ListTile(
-              title: Text(
-                _selectedDate != null
-                    ? 'Date of Birth: ${_dateFormat.format(_selectedDate!)}'
-                    : 'Select Date of Birth',
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () => _selectDate(context),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _selectDate(context, false),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Date of Birth',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                      child: Text(
+                        _selectedDate != null
+                            ? _dateFormat.format(_selectedDate!)
+                            : '',
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _selectDate(context, true),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Anniversary',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                      child: Text(
+                        _selectedAnniversary != null
+                            ? _dateFormat.format(_selectedAnniversary!)
+                            : '',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ]),
           

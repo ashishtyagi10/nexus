@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(
@@ -22,20 +23,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'Nexus',
           themeMode: themeProvider.themeMode,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              brightness: Brightness.light,
-            ),
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
-          ),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           home: const LoginScreen(),
         );
       },

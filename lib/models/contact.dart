@@ -8,6 +8,7 @@ class Contact {
   final String? company;
   final String? jobTitle;
   final DateTime? dateOfBirth;
+  final DateTime? anniversary;
   final String? notes;
   
   // Address Information
@@ -41,6 +42,7 @@ class Contact {
     this.company,
     this.jobTitle,
     this.dateOfBirth,
+    this.anniversary,
     this.notes,
     this.streetAddress,
     this.city,
@@ -75,6 +77,9 @@ class Contact {
       dateOfBirth: json['dateOfBirth'] != null 
           ? DateTime.parse(json['dateOfBirth'] as String)
           : null,
+      anniversary: json['anniversary'] != null 
+          ? DateTime.parse(json['anniversary'] as String)
+          : null,
       notes: json['notes'] as String?,
       streetAddress: json['streetAddress'] as String?,
       city: json['city'] as String?,
@@ -107,6 +112,7 @@ class Contact {
       'company': company,
       'jobTitle': jobTitle,
       'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'anniversary': anniversary?.toIso8601String(),
       'notes': notes,
       'streetAddress': streetAddress,
       'city': city,
@@ -136,6 +142,7 @@ class Contact {
     String? company,
     String? jobTitle,
     DateTime? dateOfBirth,
+    DateTime? anniversary,
     String? notes,
     String? streetAddress,
     String? city,
@@ -163,6 +170,7 @@ class Contact {
       company: company ?? this.company,
       jobTitle: jobTitle ?? this.jobTitle,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      anniversary: anniversary ?? this.anniversary,
       notes: notes ?? this.notes,
       streetAddress: streetAddress ?? this.streetAddress,
       city: city ?? this.city,
