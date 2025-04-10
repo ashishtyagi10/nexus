@@ -11,9 +11,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final List<Chat> _chats = [];
-  bool _isCreatingGroup = false;
   final TextEditingController _groupNameController = TextEditingController();
-  final List<Contact> _selectedContacts = [];
 
   @override
   void dispose() {
@@ -21,54 +19,50 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-  void _startNewChat() {
-    Navigator.push(
+  void _startNewChat() async {
+    final result = await Navigator.push<Contact>(
       context,
       MaterialPageRoute(
-        builder: (context) => const ContactsScreen(),
+        builder: (context) => const ContactsScreen(
+          isSelectionMode: true,
+          isMultiSelect: false,
+        ),
       ),
-    ).then((selectedContact) {
-      if (selectedContact != null && selectedContact is Contact) {
-        setState(() {
-          _chats.add(Chat(
-            id: DateTime.now().toString(),
-            name: selectedContact.fullName,
-            isGroup: false,
-            participants: [selectedContact],
-            lastMessage: 'No messages yet',
-            lastMessageTime: DateTime.now(),
-          ));
-        });
-      }
-    });
+    );
+
+    if (result != null) {
+      setState(() {
+        _chats.add(Chat(
+          id: DateTime.now().toString(),
+          name: result.fullName,
+          isGroup: false,
+          participants: [result],
+          lastMessage: 'No messages yet',
+          lastMessageTime: DateTime.now(),
+        ));
+      });
+      // Navigate to the chat detail screen
+      // TODO: Implement chat detail screen navigation
+    }
   }
 
-  void _createNewGroup() {
-    setState(() {
-      _isCreatingGroup = true;
-      _selectedContacts.clear();
-    });
-
-    Navigator.push(
+  void _createNewGroup() async {
+    final result = await Navigator.push<List<Contact>>(
       context,
       MaterialPageRoute(
-        builder: (context) => const ContactsScreen(),
+        builder: (context) => const ContactsScreen(
+          isSelectionMode: true,
+          isMultiSelect: true,
+        ),
       ),
-    ).then((selectedContacts) {
-      if (selectedContacts != null && selectedContacts is List<Contact>) {
-        setState(() {
-          _selectedContacts.addAll(selectedContacts);
-        });
-        _showGroupNameDialog();
-      } else {
-        setState(() {
-          _isCreatingGroup = false;
-        });
-      }
-    });
+    );
+
+    if (result != null && result.isNotEmpty) {
+      _showGroupNameDialog(result);
+    }
   }
 
-  void _showGroupNameDialog() {
+  void _showGroupNameDialog(List<Contact> selectedContacts) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -79,34 +73,33 @@ class _ChatScreenState extends State<ChatScreen> {
             labelText: 'Group Name',
             border: OutlineInputBorder(),
           ),
+          autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              setState(() {
-                _isCreatingGroup = false;
-              });
+              _groupNameController.clear();
             },
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
-              if (_groupNameController.text.isNotEmpty && _selectedContacts.isNotEmpty) {
+              if (_groupNameController.text.isNotEmpty) {
                 setState(() {
                   _chats.add(Chat(
                     id: DateTime.now().toString(),
                     name: _groupNameController.text,
                     isGroup: true,
-                    participants: List.from(_selectedContacts),
+                    participants: selectedContacts,
                     lastMessage: 'Group created',
                     lastMessageTime: DateTime.now(),
                   ));
                   _groupNameController.clear();
-                  _selectedContacts.clear();
-                  _isCreatingGroup = false;
                 });
                 Navigator.pop(context);
+                // Navigate to the chat detail screen
+                // TODO: Implement chat detail screen navigation
               }
             },
             child: const Text('Create'),
@@ -118,87 +111,110 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Chats',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chats',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _chats.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.chat_bubble_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No chats yet',
-                          style: TextStyle(
-                            fontSize: 18,
+            const SizedBox(height: 16),
+            Expanded(
+              child: _chats.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 64,
                             color: Colors.grey,
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: _startNewChat,
-                          icon: const Icon(Icons.person_add),
-                          label: const Text('Start New Chat'),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: _createNewGroup,
-                          icon: const Icon(Icons.group_add),
-                          label: const Text('Create Group'),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _chats.length,
-                    itemBuilder: (context, index) {
-                      final chat = _chats[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            child: Text(
-                              chat.isGroup ? 'G' : (chat.name.isNotEmpty ? chat.name[0] : '?'),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary,
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No chats yet',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _chats.length,
+                      itemBuilder: (context, index) {
+                        final chat = _chats[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              child: Text(
+                                chat.isGroup ? 'G' : (chat.name.isNotEmpty ? chat.name[0] : '?'),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
                               ),
                             ),
-                          ),
-                          title: Text(chat.name),
-                          subtitle: Text(chat.lastMessage),
-                          trailing: Text(
-                            _formatTime(chat.lastMessageTime),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
+                            title: Text(chat.name),
+                            subtitle: Text(chat.lastMessage),
+                            trailing: Text(
+                              _formatTime(chat.lastMessageTime),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
                             ),
+                            onTap: () {
+                              // TODO: Navigate to chat detail screen
+                            },
                           ),
-                          onTap: () {
-                            // TODO: Navigate to chat detail screen
-                          },
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: PopupMenuButton(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+        ),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            child: const Row(
+              children: [
+                Icon(Icons.person_add),
+                SizedBox(width: 8),
+                Text('Start Chat'),
+              ],
+            ),
+            onTap: _startNewChat,
+          ),
+          PopupMenuItem(
+            child: const Row(
+              children: [
+                Icon(Icons.group_add),
+                SizedBox(width: 8),
+                Text('Create Group'),
+              ],
+            ),
+            onTap: _createNewGroup,
           ),
         ],
+        position: PopupMenuPosition.over,
+        elevation: 4,
+        child: const FloatingActionButton(
+          onPressed: null,
+          child: Icon(Icons.add),
+        ),
       ),
     );
   }

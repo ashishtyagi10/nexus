@@ -4,7 +4,16 @@ import '../models/contact.dart';
 import 'edit_contact_screen.dart';
 
 class ContactsScreen extends StatefulWidget {
-  const ContactsScreen({super.key});
+  final bool isSelectionMode;
+  final bool isMultiSelect;
+  final List<Contact>? preSelectedContacts;
+
+  const ContactsScreen({
+    super.key,
+    this.isSelectionMode = false,
+    this.isMultiSelect = false,
+    this.preSelectedContacts,
+  });
 
   @override
   State<ContactsScreen> createState() => _ContactsScreenState();
@@ -95,6 +104,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
     ),
   ];
 
+  late List<Contact> _selectedContacts;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedContacts = widget.preSelectedContacts?.toList() ?? [];
+  }
+
   void _handleEditContact(Contact contact) async {
     final result = await Navigator.push<Contact>(
       context,
@@ -132,6 +149,27 @@ class _ContactsScreenState extends State<ContactsScreen> {
       setState(() {
         _contacts.add(result);
       });
+    }
+  }
+
+  void _toggleContactSelection(Contact contact) {
+    setState(() {
+      if (_selectedContacts.contains(contact)) {
+        _selectedContacts.remove(contact);
+      } else {
+        if (!widget.isMultiSelect) {
+          _selectedContacts.clear();
+        }
+        _selectedContacts.add(contact);
+      }
+    });
+  }
+
+  void _handleDone() {
+    if (_selectedContacts.isNotEmpty) {
+      Navigator.pop(context, widget.isMultiSelect ? _selectedContacts : _selectedContacts.first);
+    } else {
+      Navigator.pop(context);
     }
   }
 
@@ -195,20 +233,38 @@ class _ContactsScreenState extends State<ContactsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: widget.isSelectionMode
+          ? AppBar(
+              title: Text(widget.isMultiSelect ? 'Select Contacts' : 'Select Contact'),
+              actions: [
+                TextButton(
+                  onPressed: _handleDone,
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Contacts',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              if (!widget.isSelectionMode)
+                const Text(
+                  'Contacts',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+              if (!widget.isSelectionMode) const SizedBox(height: 16),
               Expanded(
                 child: _contacts.isEmpty
                     ? const Center(
@@ -218,92 +274,107 @@ class _ContactsScreenState extends State<ContactsScreen> {
                         itemCount: _contacts.length,
                         itemBuilder: (context, index) {
                           final contact = _contacts[index];
+                          final isSelected = _selectedContacts.contains(contact);
+                          
                           return Card(
                             margin: const EdgeInsets.only(bottom: 16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundColor: Theme.of(context).colorScheme.primary,
-                                        child: Text(
-                                          contact.initials,
-                                          style: TextStyle(
-                                            color: Theme.of(context).colorScheme.onPrimary,
+                            child: InkWell(
+                              onTap: widget.isSelectionMode
+                                  ? () => _toggleContactSelection(contact)
+                                  : null,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        if (widget.isSelectionMode)
+                                          Checkbox(
+                                            value: isSelected,
+                                            onChanged: (_) => _toggleContactSelection(contact),
+                                          ),
+                                        CircleAvatar(
+                                          backgroundColor: Theme.of(context).colorScheme.primary,
+                                          child: Text(
+                                            contact.initials,
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onPrimary,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              contact.fullName,
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            if (contact.company != null)
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
                                               Text(
-                                                contact.company!,
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
+                                                contact.fullName,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
+                                              if (contact.company != null)
+                                                Text(
+                                                  contact.company!,
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (!widget.isSelectionMode)
+                                          IconButton(
+                                            icon: const Icon(Icons.edit),
+                                            tooltip: 'Edit Contact',
+                                            onPressed: () => _handleEditContact(contact),
+                                          ),
+                                      ],
+                                    ),
+                                    if (!widget.isSelectionMode) ...[
+                                      const Divider(),
+                                      _buildContactInfo(
+                                        icon: Icons.email,
+                                        label: 'Email',
+                                        value: contact.email,
+                                      ),
+                                      if (contact.phone != null)
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: _buildContactInfo(
+                                                icon: Icons.phone,
+                                                label: 'Phone',
+                                                value: contact.phone!,
+                                              ),
+                                            ),
+                                            _buildPhoneActions(contact.phone!),
                                           ],
                                         ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit),
-                                        tooltip: 'Edit Contact',
-                                        onPressed: () => _handleEditContact(contact),
-                                      ),
+                                      if (contact.mobile != null)
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: _buildContactInfo(
+                                                icon: Icons.phone_android,
+                                                label: 'Mobile',
+                                                value: contact.mobile!,
+                                              ),
+                                            ),
+                                            _buildPhoneActions(contact.mobile!),
+                                          ],
+                                        ),
+                                      if (contact.jobTitle != null)
+                                        _buildContactInfo(
+                                          icon: Icons.work,
+                                          label: 'Job Title',
+                                          value: contact.jobTitle!,
+                                        ),
                                     ],
-                                  ),
-                                  const Divider(),
-                                  _buildContactInfo(
-                                    icon: Icons.email,
-                                    label: 'Email',
-                                    value: contact.email,
-                                  ),
-                                  if (contact.phone != null)
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildContactInfo(
-                                            icon: Icons.phone,
-                                            label: 'Phone',
-                                            value: contact.phone!,
-                                          ),
-                                        ),
-                                        _buildPhoneActions(contact.phone!),
-                                      ],
-                                    ),
-                                  if (contact.mobile != null)
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildContactInfo(
-                                            icon: Icons.phone_android,
-                                            label: 'Mobile',
-                                            value: contact.mobile!,
-                                          ),
-                                        ),
-                                        _buildPhoneActions(contact.mobile!),
-                                      ],
-                                    ),
-                                  if (contact.jobTitle != null)
-                                    _buildContactInfo(
-                                      icon: Icons.work,
-                                      label: 'Job Title',
-                                      value: contact.jobTitle!,
-                                    ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           );
@@ -314,11 +385,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _handleAddContact,
-        tooltip: 'Add Contact',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: !widget.isSelectionMode
+          ? FloatingActionButton(
+              onPressed: _handleAddContact,
+              tooltip: 'Add Contact',
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
