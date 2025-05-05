@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/contact.dart';
 import 'edit_contact_screen.dart';
+import 'contact_detail_screen.dart';
 
 class ContactsScreen extends StatefulWidget {
-  const ContactsScreen({super.key});
+  final bool multiSelect;
+  const ContactsScreen({super.key, this.multiSelect = false});
 
   @override
   State<ContactsScreen> createState() => _ContactsScreenState();
@@ -95,6 +97,8 @@ class _ContactsScreenState extends State<ContactsScreen> {
     ),
   ];
 
+  final Set<Contact> _selected = {};
+
   void _handleEditContact(Contact contact) async {
     final result = await Navigator.push<Contact>(
       context,
@@ -167,7 +171,23 @@ class _ContactsScreenState extends State<ContactsScreen> {
     }
   }
 
-  Widget _buildPhoneActions(String phoneNumber) {
+  Future<void> _sendEmail(String email) async {
+    final Uri launchUri = Uri(
+      scheme: 'mailto',
+      path: email,
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch email app')),
+        );
+      }
+    }
+  }
+
+  Widget _buildPhoneActions(String phoneNumber, {String? email}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -188,6 +208,17 @@ class _ContactsScreenState extends State<ContactsScreen> {
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),
+        if (email != null) ...[
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.email),
+            tooltip: 'Email',
+            onPressed: () => _sendEmail(email),
+            iconSize: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
       ],
     );
   }
@@ -218,107 +249,144 @@ class _ContactsScreenState extends State<ContactsScreen> {
                         itemCount: _contacts.length,
                         itemBuilder: (context, index) {
                           final contact = _contacts[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundColor: Theme.of(context).colorScheme.primary,
-                                        child: Text(
-                                          contact.initials,
-                                          style: TextStyle(
-                                            color: Theme.of(context).colorScheme.onPrimary,
-                                          ),
+                          return GestureDetector(
+                            onTap: () {
+                              if (widget.multiSelect) {
+                                setState(() {
+                                  if (_selected.contains(contact)) {
+                                    _selected.remove(contact);
+                                  } else {
+                                    _selected.add(contact);
+                                  }
+                                });
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ContactDetailScreen(
+                                      contact: contact,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Card(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              color: widget.multiSelect &&
+                                      _selected.contains(contact)
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.2)
+                                  : null,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor:
+                                          Theme.of(context).colorScheme.primary,
+                                      child: Text(
+                                        contact.initials,
+                                        style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary,
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            contact.fullName,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (contact.jobTitle != null || contact.company != null)
                                             Text(
-                                              contact.fullName,
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
+                                              [
+                                                if (contact.jobTitle != null) contact.jobTitle,
+                                                if (contact.company != null) 'at ${contact.company}',
+                                              ].join(' '),
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
                                               ),
                                             ),
-                                            if (contact.company != null)
-                                              Text(
-                                                contact.company!,
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                ),
+                                          if (contact.mobile != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2.0),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    contact.mobile!,
+                                                    style: TextStyle(
+                                                      color: Colors.grey[600],
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  _buildPhoneActions(contact.mobile!, email: contact.email),
+                                                ],
                                               ),
-                                          ],
-                                        ),
+                                            ),
+                                        ],
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit),
-                                        tooltip: 'Edit Contact',
-                                        onPressed: () => _handleEditContact(contact),
+                                    ),
+                                    if (widget.multiSelect)
+                                      Checkbox(
+                                        value: _selected.contains(contact),
+                                        onChanged: (val) {
+                                          setState(() {
+                                            if (val == true) {
+                                              _selected.add(contact);
+                                            } else {
+                                              _selected.remove(contact);
+                                            }
+                                          });
+                                        },
                                       ),
-                                    ],
-                                  ),
-                                  const Divider(),
-                                  _buildContactInfo(
-                                    icon: Icons.email,
-                                    label: 'Email',
-                                    value: contact.email,
-                                  ),
-                                  if (contact.phone != null)
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildContactInfo(
-                                            icon: Icons.phone,
-                                            label: 'Phone',
-                                            value: contact.phone!,
-                                          ),
-                                        ),
-                                        _buildPhoneActions(contact.phone!),
-                                      ],
-                                    ),
-                                  if (contact.mobile != null)
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildContactInfo(
-                                            icon: Icons.phone_android,
-                                            label: 'Mobile',
-                                            value: contact.mobile!,
-                                          ),
-                                        ),
-                                        _buildPhoneActions(contact.mobile!),
-                                      ],
-                                    ),
-                                  if (contact.jobTitle != null)
-                                    _buildContactInfo(
-                                      icon: Icons.work,
-                                      label: 'Job Title',
-                                      value: contact.jobTitle!,
-                                    ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
               ),
+              if (widget.multiSelect)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _selected.isNotEmpty
+                              ? () => Navigator.pop(context, _selected.toList())
+                              : null,
+                          child: const Text('Done'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _handleAddContact,
-        tooltip: 'Add Contact',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: widget.multiSelect
+          ? null
+          : FloatingActionButton(
+              onPressed: _handleAddContact,
+              tooltip: 'Add Contact',
+              child: const Icon(Icons.add),
+            ),
     );
   }
 
@@ -354,4 +422,4 @@ class _ContactsScreenState extends State<ContactsScreen> {
       ),
     );
   }
-} 
+}
