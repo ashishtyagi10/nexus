@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/contact.dart';
 import 'edit_contact_screen.dart';
 import 'contact_detail_screen.dart';
+import 'payment_screen.dart';
 
 class ContactsScreen extends StatefulWidget {
   final bool multiSelect;
@@ -187,6 +188,15 @@ class _ContactsScreenState extends State<ContactsScreen> {
     }
   }
 
+  Future<void> _navigateToPayment(String phoneNumber) async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentScreen(recipientPhone: phoneNumber),
+      ),
+    );
+  }
+
   Widget _buildPhoneActions(String phoneNumber, {String? email}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -219,6 +229,15 @@ class _ContactsScreenState extends State<ContactsScreen> {
             constraints: const BoxConstraints(),
           ),
         ],
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.payment),
+          tooltip: 'Payment',
+          onPressed: () => _navigateToPayment(phoneNumber),
+          iconSize: 20,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
       ],
     );
   }
@@ -308,11 +327,14 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          if (contact.jobTitle != null || contact.company != null)
+                                          if (contact.jobTitle != null ||
+                                              contact.company != null)
                                             Text(
                                               [
-                                                if (contact.jobTitle != null) contact.jobTitle,
-                                                if (contact.company != null) 'at ${contact.company}',
+                                                if (contact.jobTitle != null)
+                                                  contact.jobTitle,
+                                                if (contact.company != null)
+                                                  'at ${contact.company}',
                                               ].join(' '),
                                               style: TextStyle(
                                                 color: Colors.grey[600],
@@ -320,9 +342,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                             ),
                                           if (contact.mobile != null)
                                             Padding(
-                                              padding: const EdgeInsets.only(top: 2.0),
+                                              padding: const EdgeInsets.only(
+                                                  top: 2.0),
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     contact.mobile!,
@@ -332,7 +356,9 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(height: 2),
-                                                  _buildPhoneActions(contact.mobile!, email: contact.email),
+                                                  _buildPhoneActions(
+                                                      contact.mobile!,
+                                                      email: contact.email),
                                                 ],
                                               ),
                                             ),

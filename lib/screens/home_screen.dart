@@ -4,6 +4,7 @@ import 'contacts_screen.dart';
 import 'news_feed_screen.dart';
 import 'settings_screen.dart';
 import 'chat_screen.dart';
+import 'payment_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const ContactsScreen(),
     const ChatScreen(),
     const NewsFeedScreen(),
+    const PaymentScreen(),
     const SettingsScreen(),
   ];
 
@@ -73,6 +75,10 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'News Feed',
           ),
           NavigationDestination(
+            icon: Icon(Icons.payment),
+            label: 'Payments',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
@@ -80,4 +86,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-} 
+}
